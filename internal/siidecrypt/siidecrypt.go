@@ -97,7 +97,8 @@ func DecryptFile(path string, decode bool) ([]byte, error) {
 		// Equivalent to DecodePlaintext: return as-is.
 		return bytes, nil
 	case SignatureBinary:
-		return nil, errors.New("BSII (binary) decoding not implemented yet")
+		// Decode BSII (binary SII format)
+		return DecodeBSII(bytes[pos:])
 	case Signature3nK:
 		return nil, errors.New("_3nK decoding not implemented yet")
 	default:

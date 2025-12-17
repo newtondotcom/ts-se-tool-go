@@ -1,0 +1,3 @@
+- save the current profile
+- load all cities, countries, trucks, trailers etc
+- delete all saves and put 1/game.sii and 1/info.sii
