@@ -25,11 +25,22 @@ func main() {
 
 	path := os.Args[1]
 
+	// Step 1: Decrypt/decode the file (handles encrypted, BSII, or plaintext)
+	fmt.Println("Step 1: Decrypting/decoding SII file...")
 	plain, err := siidecrypt.DecryptFile(path, true)
 	if err != nil {
 		log.Fatalf("decrypt %s: %v", path, err)
 	}
 
+	// Debug: show first 500 bytes of decoded text
+	if len(plain) > 500 {
+		fmt.Printf("Decoded text preview (first 500 bytes):\n%s\n...\n", string(plain[:500]))
+	} else {
+		fmt.Printf("Decoded text:\n%s\n", string(plain))
+	}
+
+	// Step 2: Parse the text SII into a Document structure
+	fmt.Println("\nStep 2: Parsing SII text...")
 	doc, err := sii.ReadDocument(plain)
 	if err != nil {
 		log.Fatalf("parse SII: %v", err)

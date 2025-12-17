@@ -40,7 +40,7 @@ func DecodeBSII(bytes []byte) ([]byte, error) {
 
 	ordinalLists := make(map[uint32]map[uint32]string)
 
-	// First pass: collect all structure definitions only
+	// First pass: collect all structure definitions
 	posFirstPass := pos
 	for posFirstPass < len(bytes) {
 		blockType, err := decodeUInt32(bytes, &posFirstPass)
@@ -99,7 +99,7 @@ func DecodeBSII(bytes []byte) ([]byte, error) {
 				currentBlock.Segments = append(currentBlock.Segments, segment)
 			}
 
-			// Check if we already have this structure ID
+			// Check if we already have this structure ID (like C# Any check)
 			found := false
 			for i := range fileData.Blocks {
 				if fileData.Blocks[i].StructureID == structureID {
@@ -111,8 +111,7 @@ func DecodeBSII(bytes []byte) ([]byte, error) {
 				fileData.Blocks = append(fileData.Blocks, currentBlock)
 			}
 		} else {
-			// Instance block - skip it for now (we'll process in second pass)
-			// Find structure if it exists to skip properly
+			// Instance block - skip it for now, we'll process in second pass
 			var blockDataItem *BSIIStructureBlock
 			for i := range fileData.Blocks {
 				if fileData.Blocks[i].StructureID == blockType {
@@ -121,7 +120,7 @@ func DecodeBSII(bytes []byte) ([]byte, error) {
 				}
 			}
 			if blockDataItem != nil {
-				// We know the structure, skip the data
+				// We know the structure, skip the instance data
 				_, err := decodeID(bytes, &posFirstPass)
 				if err != nil {
 					break // Can't continue
@@ -132,16 +131,21 @@ func DecodeBSII(bytes []byte) ([]byte, error) {
 					}
 				}
 			} else {
-				// Structure not defined yet - can't skip without structure
-				// This means we hit an instance before its definition
-				// We'll need to process it in second pass, but for now we can't skip it
-				// So we break and will do a full second pass
-				break
+				// Structure not found yet - skip instance data without structure info
+				// This can happen if instance appears before definition
+				// We'll try to skip just the ID and hope for the best
+				_, err := decodeID(bytes, &posFirstPass)
+				if err != nil {
+					break // Can't continue
+				}
+				// Can't skip segments without structure, so we break
+				// This means we've hit an instance before its definition
+				// Continue collecting definitions, we'll process instances in second pass
 			}
 		}
 	}
 
-	// Second pass: process all blocks (definitions already collected, now process instances)
+	// Second pass: process all instances (now all definitions are collected)
 	pos = 0
 	// Skip header
 	_, _ = decodeUInt32(bytes, &pos)
@@ -153,7 +157,32 @@ func DecodeBSII(bytes []byte) ([]byte, error) {
 			break // End of data
 		}
 
-		if blockType != 0 {
+		if blockType == 0 {
+			// Structure definition - skip it (already collected in first pass)
+			valid, err := decodeBool(bytes, &pos)
+			if err != nil {
+				break
+			}
+			if !valid {
+				continue
+			}
+			_, _ = decodeUInt32(bytes, &pos)     // structureID
+			_, _ = decodeUTF8String(bytes, &pos) // name
+			// Skip segments
+			for {
+				segType, err := decodeUInt32(bytes, &pos)
+				if err != nil {
+					break
+				}
+				if segType == 0 {
+					break
+				}
+				_, _ = decodeUTF8String(bytes, &pos) // segment name
+				if segType == 0x37 {
+					_, _ = decodeOrdinalStringList(bytes, &pos)
+				}
+			}
+		} else {
 			// Instance block - find the structure definition
 			var blockDataItem *BSIIStructureBlock
 			for i := range fileData.Blocks {
@@ -163,17 +192,11 @@ func DecodeBSII(bytes []byte) ([]byte, error) {
 				}
 			}
 			if blockDataItem == nil {
-				// Structure not found - this shouldn't happen after first pass
-				// Skip this instance by trying to decode ID and segments
-				_, err := decodeID(bytes, &pos)
-				if err != nil {
-					break
-				}
-				// Can't skip segments without structure, so we break
-				break
+				// Structure still not found after first pass - this shouldn't happen
+				return nil, fmt.Errorf("structure ID %d not found after collecting all definitions", blockType)
 			}
 
-			// Create a copy of the structure
+			// Create a copy of the structure (like C# code)
 			blockData := BSIIStructureBlock{
 				StructureID: blockDataItem.StructureID,
 				Name:        blockDataItem.Name,
@@ -195,33 +218,16 @@ func DecodeBSII(bytes []byte) ([]byte, error) {
 				}
 			}
 
-			// Load data for this instance
+			// Get ordinal list for this structure
 			list := ordinalLists[blockData.StructureID]
+
+			// Load data for this instance
 			err = loadDataBlockLocal(bytes, &pos, &blockData, fileData.Header.Version, list)
 			if err != nil {
 				return nil, fmt.Errorf("load data block for structure %d: %w", blockType, err)
 			}
 
 			fileData.DecodedBlocks = append(fileData.DecodedBlocks, blockData)
-		} else {
-			// Structure definition - skip it (already collected in first pass)
-			_, _ = decodeBool(bytes, &pos)
-			_, _ = decodeUInt32(bytes, &pos)     // structureID
-			_, _ = decodeUTF8String(bytes, &pos) // name
-			// Skip segments
-			for {
-				segType, err := decodeUInt32(bytes, &pos)
-				if err != nil {
-					break
-				}
-				if segType == 0 {
-					break
-				}
-				_, _ = decodeUTF8String(bytes, &pos) // segment name
-				if segType == 0x37 {
-					_, _ = decodeOrdinalStringList(bytes, &pos)
-				}
-			}
 		}
 	}
 

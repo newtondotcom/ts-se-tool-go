@@ -98,7 +98,8 @@ func DecryptFile(path string, decode bool) ([]byte, error) {
 		return bytes, nil
 	case SignatureBinary:
 		// Decode BSII (binary SII format)
-		return DecodeBSII(bytes[pos:])
+		// Note: DecodeBSII expects the full buffer including the signature (like C# BSII_Decoder.Decode)
+		return DecodeBSII(bytes)
 	case Signature3nK:
 		return nil, errors.New("_3nK decoding not implemented yet")
 	default:
