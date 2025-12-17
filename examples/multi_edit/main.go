@@ -76,15 +76,21 @@ func main() {
 	// Write modified properties back into the block.
 	bankBlock.Properties = bank.ToProperties()
 
+	var economy items.Economy
+	economy.FromProperties(doc.Blocks[0].Properties)
+	fmt.Printf("current economy: %+v\n", economy)
+
 	// Serialize and overwrite the file.
-	out, err := sii.WriteDocument(doc)
-	if err != nil {
-		log.Fatalf("serialize SII: %v", err)
-	}
+	/*
+		out, err := sii.WriteDocument(doc)
+		if err != nil {
+			log.Fatalf("serialize SII: %v", err)
+		}
 
-	if err := os.WriteFile(path, out, 0o644); err != nil {
-		log.Fatalf("write %s: %v", path, err)
-	}
+		if err := os.WriteFile(path, out, 0o644); err != nil {
+			log.Fatalf("write %s: %v", path, err)
+		}
 
-	fmt.Println("file updated successfully")
+		fmt.Println("file updated successfully")
+	*/
 }

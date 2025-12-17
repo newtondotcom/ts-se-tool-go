@@ -12,7 +12,7 @@ type BusJobLog struct{}
 
 type BusStop struct{}
 
-type Company struct{}
+// Company is defined in company.go
 
 type DeliveryLogEntry struct{}
 
@@ -26,7 +26,7 @@ type EconomyEventQueue struct{}
 
 type EconomyEvent struct{}
 
-type Economy struct{}
+// Economy is defined in economy.go
 
 type FerryLogEntry struct{}
 
