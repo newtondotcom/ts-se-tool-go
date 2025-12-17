@@ -80,10 +80,12 @@ func decodeUTF8String(bytes []byte, offset *int) (string, error) {
 func decodeUInt64String(bytes []byte, offset *int) (string, error) {
 	value, err := decodeUInt64(bytes, offset)
 	if err != nil {
+		fmt.Printf("decodeUInt64String: error decoding uint64: %v\n", err)
 		return "", err
 	}
 	var result strings.Builder
 	val := value
+	iteration := 0
 	for val != 0 {
 		charIdx := int(val % 38)
 		if charIdx < 0 {
@@ -92,15 +94,17 @@ func decodeUInt64String(bytes []byte, offset *int) (string, error) {
 		charIdx--
 		val = val / 38
 		if charIdx >= 0 && charIdx < len(BSIICharTable) {
-			result.WriteByte(BSIICharTable[charIdx])
+			char := BSIICharTable[charIdx]
+			result.WriteByte(char)
+		}
+		iteration++
+		if iteration > 20 { // Safety limit
+			fmt.Printf("decodeUInt64String: too many iterations, breaking\n")
+			break
 		}
 	}
-	// Reverse the string
-	runes := []rune(result.String())
-	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-		runes[i], runes[j] = runes[j], runes[i]
-	}
-	return string(runes), nil
+	original := result.String()
+	return original, nil
 }
 
 // decodeUInt64 reads a uint64 from bytes
@@ -300,14 +304,19 @@ func decodeUInt64StringArray(bytes []byte, offset *int) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("decodeUInt64StringArray: count=%d, offset=%d\n", count, *offset)
 	result := make([]string, count)
 	for i := uint32(0); i < count; i++ {
+		fmt.Printf("decodeUInt64StringArray: calling decodeUInt64String for index %d, offset=%d\n", i, *offset)
 		s, err := decodeUInt64String(bytes, offset)
 		if err != nil {
+			fmt.Printf("decodeUInt64StringArray: error at index %d: %v\n", i, err)
 			return nil, err
 		}
+		fmt.Printf("decodeUInt64StringArray: index %d decoded as '%s' (len=%d)\n", i, s, len(s))
 		result[i] = s
 	}
+	fmt.Printf("decodeUInt64StringArray: final result: %+v\n", result)
 	return result, nil
 }
 
