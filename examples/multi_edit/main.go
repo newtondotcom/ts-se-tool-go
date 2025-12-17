@@ -78,7 +78,9 @@ func main() {
 
 	var economy items.Economy
 	economy.FromProperties(doc.Blocks[0].Properties)
-	fmt.Printf("current economy: %+v\n", economy)
+	if err := economy.FromProperties(doc.Blocks[0].Properties); err != nil {
+		log.Fatalf("load economy: %v", err)
+	}
 
 	// Serialize and overwrite the file.
 	/*

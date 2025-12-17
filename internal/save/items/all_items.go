@@ -4,98 +4,96 @@ package items
 // CustomClasses/Save/Items. The fields and behavior will be filled in
 // progressively as the SII parser/serializer is completed.
 
-// SiiNBlockCore is the base type for many save-game blocks in the C# code.
-// Here it is just a marker that can be embedded or referenced later.
-type SiiNBlockCore struct{}
+// SiiNBlockCore is defined in siinblockcore.go
 
-type BusJobLog struct{}
+// BusJobLog is defined in bus_job_log.go
 
-type BusStop struct{}
+// BusStop is defined in bus_stop.go
 
 // Company is defined in company.go
 
-type DeliveryLogEntry struct{}
+// DeliveryLogEntry is defined in delivery_log_entry.go
 
-type DeliveryLog struct{}
+// DeliveryLog is defined in delivery_log.go
 
-type DriverAI struct{}
+// DriverAI is defined in driver_ai.go
 
-type DriverPlayer struct{}
+// DriverPlayer is defined in driver_player.go
 
-type EconomyEventQueue struct{}
+// EconomyEventQueue is defined in economy_event_queue.go
 
-type EconomyEvent struct{}
+// EconomyEvent is defined in economy_event.go
 
 // Economy is defined in economy.go
 
-type FerryLogEntry struct{}
+// FerryLogEntry is defined in ferry_log_entry.go
 
-type FerryLog struct{}
+// FerryLog is defined in ferry_log.go
 
-type GameProgress struct{}
+// GameProgress is defined in game_progress.go
 
-type Garage struct{}
+// Garage is defined in garage.go
 
-type GPSWaypointStorage struct{}
+// GPSWaypointStorage is defined in gps_waypoint_storage.go
 
-type JobInfo struct{}
+// JobInfo is defined in job_info.go
 
-type JobOfferData struct{}
+// JobOfferData is defined in job_offer_data.go
 
-type MailCtrl struct{}
+// MailCtrl is defined in mail_ctrl.go
 
-type MailDef struct{}
+// MailDef is defined in mail_def.go
 
-type MapAction struct{}
+// MapAction is defined in map_action.go
 
-type OversizeBlockRuleSave struct{}
+// OversizeBlockRuleSave is defined in oversize_block_rule_save.go
 
-type OversizeJobSave struct{}
+// OversizeJobSave is defined in oversize_job_save.go
 
-type OversizeOfferCtrl struct{}
+// OversizeOfferCtrl is defined in oversize_offer_ctrl.go
 
-type OversizeOffer struct{}
+// OversizeOffer is defined in oversize_offer.go
 
-type OversizeRouteOffers struct{}
+// OversizeRouteOffers is defined in oversize_route_offers.go
 
-type PlayerJob struct{}
+// PlayerJob is defined in player_job.go
 
-type PoliceCtrl struct{}
+// PoliceCtrl is defined in police_ctrl.go
 
-type ProfitLogEntry struct{}
+// ProfitLogEntry is defined in profit_log_entry.go
 
-type ProfitLog struct{}
+// ProfitLog is defined in profit_log.go
 
-type Registry struct{}
+// Registry is defined in registry.go
 
-type SiiNunit struct{}
+// SiiNunit is defined in siinunit.go
 
-type TrailerDef struct{}
+// TrailerDef is defined in trailer_def.go
 
-type TrailerUtilizationLogEntry struct{}
+// TrailerUtilizationLogEntry is defined in trailer_utilization_log_entry.go
 
-type TrailerUtilizationLog struct{}
+// TrailerUtilizationLog is defined in trailer_utilization_log.go
 
-type Trailer struct{}
+// Trailer is defined in trailer.go
 
-type TrajectoryOrdersSave struct{}
+// TrajectoryOrdersSave is defined in trajectory_orders_save.go
 
-type TransportData struct{}
+// TransportData is defined in transport_data.go
 
-type Unidentified struct{}
+// Unidentified is defined in unidentified.go
 
-type VehicleAccessory struct{}
+// VehicleAccessory is defined in vehicle_accessory.go
 
-type VehicleAddonAccessory struct{}
+// VehicleAddonAccessory is defined in vehicle_addon_accessory.go
 
-type VehicleCargoAccessory struct{}
+// VehicleCargoAccessory is defined in vehicle_cargo_accessory.go
 
-type VehicleDrvPlateAccessory struct{}
+// VehicleDrvPlateAccessory is defined in vehicle_drv_plate_accessory.go
 
-type VehiclePaintJobAccessory struct{}
+// VehiclePaintJobAccessory is defined in vehicle_paint_job_accessory.go
 
-type VehicleSoundAccessory struct{}
+// VehicleSoundAccessory is defined in vehicle_sound_accessory.go
 
-type VehicleWheelAccessory struct{}
+// VehicleWheelAccessory is defined in vehicle_wheel_accessory.go
 
-type Vehicle struct{}
+// Vehicle is defined in vehicle.go

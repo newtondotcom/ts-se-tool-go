@@ -232,3 +232,41 @@ func parseCompanyBool(s string) bool {
 func formatCompanyBool(b bool) string {
 	return strconv.FormatBool(b)
 }
+
+// parseVector4f parses a Vector4f from a string like "(&3f59911d; &ba5459ea, &bf06e8dd, &ba03acdd)"
+func parseVector4f(s string) (dataformat.Vector4f, error) {
+	// Remove parentheses and split by semicolon/comma
+	s = strings.TrimSpace(s)
+	s = strings.TrimPrefix(s, "(")
+	s = strings.TrimSuffix(s, ")")
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		return r == ';' || r == ','
+	})
+	if len(parts) != 4 {
+		return dataformat.Vector4f{}, fmt.Errorf("invalid vector4f format: expected 4 components, got %d", len(parts))
+	}
+
+	w, err := parseHexFloat(strings.TrimSpace(parts[0]))
+	if err != nil {
+		return dataformat.Vector4f{}, fmt.Errorf("parse W: %w", err)
+	}
+	x, err := parseHexFloat(strings.TrimSpace(parts[1]))
+	if err != nil {
+		return dataformat.Vector4f{}, fmt.Errorf("parse X: %w", err)
+	}
+	y, err := parseHexFloat(strings.TrimSpace(parts[2]))
+	if err != nil {
+		return dataformat.Vector4f{}, fmt.Errorf("parse Y: %w", err)
+	}
+	z, err := parseHexFloat(strings.TrimSpace(parts[3]))
+	if err != nil {
+		return dataformat.Vector4f{}, fmt.Errorf("parse Z: %w", err)
+	}
+
+	return dataformat.Vector4f{W: w, X: x, Y: y, Z: z}, nil
+}
+
+// formatVector4f formats a Vector4f to string like "(&3f59911d; &ba5459ea, &bf06e8dd, &ba03acdd)"
+func formatVector4f(v dataformat.Vector4f) string {
+	return fmt.Sprintf("(%s; %s, %s, %s)", formatHexFloat(v.W), formatHexFloat(v.X), formatHexFloat(v.Y), formatHexFloat(v.Z))
+}
