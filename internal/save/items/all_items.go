@@ -8,8 +8,6 @@ package items
 // Here it is just a marker that can be embedded or referenced later.
 type SiiNBlockCore struct{}
 
-type Bank struct{}
-
 type BusJobLog struct{}
 
 type BusStop struct{}
@@ -62,8 +60,6 @@ type OversizeRouteOffers struct{}
 
 type PlayerJob struct{}
 
-type Player struct{}
-
 type PoliceCtrl struct{}
 
 type ProfitLogEntry struct{}
@@ -103,5 +99,3 @@ type VehicleSoundAccessory struct{}
 type VehicleWheelAccessory struct{}
 
 type Vehicle struct{}
-
-
