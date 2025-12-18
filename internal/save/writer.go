@@ -87,7 +87,7 @@ func WriteInfoSII(saveDir string, doc *sii.Document, encrypt bool) error {
 
 // WriteProfileSII writes a profile.sii document to the specified profile directory.
 // It creates a backup (profile_backup.sii) before writing. The profile directory must already exist.
-// If encrypt is true, the file is written in encrypted format; otherwise, it's written as plaintext.
+// profile.sii is always written in encrypted format, regardless of the encrypt parameter.
 func WriteProfileSII(profileDir string, doc *sii.Document, encrypt bool) error {
 	profilePath := filepath.Join(profileDir, "profile.sii")
 
@@ -102,15 +102,9 @@ func WriteProfileSII(profileDir string, doc *sii.Document, encrypt bool) error {
 		return fmt.Errorf("serialize SII document: %w", err)
 	}
 
-	// Write file (encrypted or plaintext)
-	if encrypt {
-		if err := siidecrypt.EncryptFile(profilePath, plaintext); err != nil {
-			return fmt.Errorf("write encrypted profile.sii: %w", err)
-		}
-	} else {
-		if err := os.WriteFile(profilePath, plaintext, 0o644); err != nil {
-			return fmt.Errorf("write profile.sii: %w", err)
-		}
+	// profile.sii is always encrypted
+	if err := siidecrypt.EncryptFile(profilePath, plaintext); err != nil {
+		return fmt.Errorf("write encrypted profile.sii: %w", err)
 	}
 
 	return nil
