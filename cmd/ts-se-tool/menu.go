@@ -49,7 +49,7 @@ func promptMoney() (int64, error) {
 }
 
 func promptXP() (uint32, error) {
-	fmt.Print("Enter XP points: ")
+	fmt.Print("Enter XP points (max 922499): ")
 	reader := bufio.NewReader(os.Stdin)
 	input, _ := reader.ReadString('\n')
 	input = strings.TrimSpace(input)
@@ -58,6 +58,14 @@ func promptXP() (uint32, error) {
 	if err != nil {
 		return 0, fmt.Errorf("invalid XP: %v", err)
 	}
+
+	// Cap XP at 922499
+	const maxXP = 922499
+	if xp > maxXP {
+		fmt.Printf("XP capped at %d (you entered %d)\n", maxXP, xp)
+		xp = maxXP
+	}
+
 	return uint32(xp), nil
 }
 
