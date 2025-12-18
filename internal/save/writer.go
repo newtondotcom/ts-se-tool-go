@@ -13,7 +13,7 @@ import (
 
 // WriteGameSII writes a game.sii document to the specified profile and save slot.
 // It creates a backup (game_backup.sii) before writing. The save directory must already exist.
-// If encrypt is true, the file is written in encrypted format; otherwise, it's written as plaintext.
+// game.sii is always written as plaintext, never encrypted, regardless of the encrypt parameter.
 func WriteGameSII(profileDir, slot string, doc *sii.Document, encrypt bool) error {
 	saveDir := filepath.Join(profileDir, "save", slot)
 	gamePath := filepath.Join(saveDir, "game.sii")
@@ -34,15 +34,9 @@ func WriteGameSII(profileDir, slot string, doc *sii.Document, encrypt bool) erro
 		return fmt.Errorf("serialize SII document: %w", err)
 	}
 
-	// Write file (encrypted or plaintext)
-	if encrypt {
-		if err := siidecrypt.EncryptFile(gamePath, plaintext); err != nil {
-			return fmt.Errorf("write encrypted game.sii: %w", err)
-		}
-	} else {
-		if err := os.WriteFile(gamePath, plaintext, 0o644); err != nil {
-			return fmt.Errorf("write game.sii: %w", err)
-		}
+	// game.sii is always written as plaintext
+	if err := os.WriteFile(gamePath, plaintext, 0o644); err != nil {
+		return fmt.Errorf("write game.sii: %w", err)
 	}
 
 	return nil
@@ -51,7 +45,7 @@ func WriteGameSII(profileDir, slot string, doc *sii.Document, encrypt bool) erro
 // WriteInfoSII writes an info.sii document to the specified save directory.
 // It creates a backup (info_backup.sii) before writing if the file exists.
 // If the save directory doesn't exist, it will be created (useful for convoy tools).
-// If encrypt is true, the file is written in encrypted format; otherwise, it's written as plaintext.
+// info.sii is always written as plaintext, never encrypted, regardless of the encrypt parameter.
 func WriteInfoSII(saveDir string, doc *sii.Document, encrypt bool) error {
 	infoPath := filepath.Join(saveDir, "info.sii")
 
@@ -71,15 +65,9 @@ func WriteInfoSII(saveDir string, doc *sii.Document, encrypt bool) error {
 		return fmt.Errorf("serialize SII document: %w", err)
 	}
 
-	// Write file (encrypted or plaintext)
-	if encrypt {
-		if err := siidecrypt.EncryptFile(infoPath, plaintext); err != nil {
-			return fmt.Errorf("write encrypted info.sii: %w", err)
-		}
-	} else {
-		if err := os.WriteFile(infoPath, plaintext, 0o644); err != nil {
-			return fmt.Errorf("write info.sii: %w", err)
-		}
+	// info.sii is always written as plaintext
+	if err := os.WriteFile(infoPath, plaintext, 0o644); err != nil {
+		return fmt.Errorf("write info.sii: %w", err)
 	}
 
 	return nil
