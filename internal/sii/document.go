@@ -21,6 +21,16 @@ type Block struct {
 	Properties map[string][]string
 }
 
+// IndexByName builds a simple name -> Block map over all blocks in the
+// document. It is the Go equivalent of the C# SiiNunit.SiiNitems dictionary.
+func (d *Document) IndexByName() map[string]Block {
+	out := make(map[string]Block, len(d.Blocks))
+	for _, b := range d.Blocks {
+		out[b.Name] = b
+	}
+	return out
+}
+
 // ToBankLoans parcourt les blocs et construit des BankLoan typés à partir des
 // blocs de type "bank_loan".
 func (d *Document) ToBankLoans() []items.BankLoan {
@@ -67,6 +77,38 @@ func (d *Document) ToBankLoans() []items.BankLoan {
 	}
 
 	return out
+}
+
+// ToEconomy searches for the first block of type "economy" and converts it to
+// a typed items.Economy using the FromProperties helper.
+func (d *Document) ToEconomy() (*items.Economy, error) {
+	for _, b := range d.Blocks {
+		if b.Type != "economy" {
+			continue
+		}
+		var e items.Economy
+		if err := e.FromProperties(b.Properties); err != nil {
+			return nil, err
+		}
+		return &e, nil
+	}
+	return nil, nil
+}
+
+// ToPlayer searches for the first block of type "player" and converts it to a
+// typed items.Player using the FromProperties helper.
+func (d *Document) ToPlayer() (*items.Player, error) {
+	for _, b := range d.Blocks {
+		if b.Type != "player" {
+			continue
+		}
+		var p items.Player
+		if err := p.FromProperties(b.Properties); err != nil {
+			return nil, err
+		}
+		return &p, nil
+	}
+	return nil, nil
 }
 
 // DebugString returns a human-friendly dump of the document.

@@ -304,19 +304,15 @@ func decodeUInt64StringArray(bytes []byte, offset *int) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("decodeUInt64StringArray: count=%d, offset=%d\n", count, *offset)
 	result := make([]string, count)
 	for i := uint32(0); i < count; i++ {
-		fmt.Printf("decodeUInt64StringArray: calling decodeUInt64String for index %d, offset=%d\n", i, *offset)
 		s, err := decodeUInt64String(bytes, offset)
 		if err != nil {
 			fmt.Printf("decodeUInt64StringArray: error at index %d: %v\n", i, err)
 			return nil, err
 		}
-		fmt.Printf("decodeUInt64StringArray: index %d decoded as '%s' (len=%d)\n", i, s, len(s))
 		result[i] = s
 	}
-	fmt.Printf("decodeUInt64StringArray: final result: %+v\n", result)
 	return result, nil
 }
 
