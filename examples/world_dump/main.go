@@ -6,15 +6,56 @@ import (
 	"log"
 
 	"github.com/robebs/ts-se-tool-go/internal/app"
+	"github.com/robebs/ts-se-tool-go/internal/discovery"
 )
 
 func main() {
-	profile := flag.String("profile", "./tmp", "profile directory (contains save/)")
-	slot := flag.String("slot", "1", "save slot (e.g. 1, autosave)")
+	profile := flag.String("profile", "", "profile directory (contains save/)")
+	slot := flag.String("slot", "", "save slot (e.g. 1, autosave); if empty, auto-select")
 	city2country := flag.String("city2country", "", "optional CityToCountry.csv path")
 	gamerefRoot := flag.String("gameref", "", "optional gameref root path")
 	gameType := flag.String("gametype", "ETS2", "game type (ETS2 or ATS)")
+	listOnly := flag.Bool("list", false, "only list detected profiles and saves, do not load world")
 	flag.Parse()
+
+	game := discovery.GameType(*gameType)
+
+	// If no profile is provided, try to discover profiles/saves automatically.
+	if *profile == "" {
+		custom := discovery.CustomConfig{Paths: map[discovery.GameType][]string{}}
+		saves, err := discovery.DiscoverSaveSlots(game, custom)
+		if err != nil {
+			log.Fatalf("discover saves: %v", err)
+		}
+		if len(saves) == 0 {
+			log.Fatalf("no saves found for game %s", *gameType)
+		}
+
+		fmt.Println("Discovered save slots:")
+		for i, s := range saves {
+			fmt.Printf("[%d] game=%s source=%s profile=%s slot=%s path=%s\n",
+				i,
+				s.Profile.Game,
+				s.Profile.Location.Source,
+				s.Profile.NameHex,
+				s.SlotName,
+				s.Path,
+			)
+		}
+
+		if *listOnly {
+			return
+		}
+
+		// Auto-select the first save slot.
+		chosen := saves[0]
+		*profile = chosen.Profile.Path
+		*slot = chosen.SlotName
+		fmt.Printf("\nAuto-selected profile=%s slot=%s\n", chosen.Profile.NameHex, chosen.SlotName)
+	} else if *slot == "" {
+		// profile provided but no slot: default to "1" as a common case.
+		*slot = "1"
+	}
 
 	opts := app.LoadOptions{
 		GameType:          *gameType,
