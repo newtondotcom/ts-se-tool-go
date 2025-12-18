@@ -44,12 +44,8 @@ func runInteractive(c *cli.Context) error {
 	}
 	fmt.Println("Save file loaded successfully")
 
-	// Step 3: Backup save slot
-	fmt.Println("\nCreating backup...")
-	if err := save.BackupSaveSlot(selected.ProfileDir, selected.SaveSlot); err != nil {
-		return fmt.Errorf("backup save slot: %w", err)
-	}
-	fmt.Println("Backup created successfully")
+	// Step 3: Backups will be created automatically when writing files
+	fmt.Println("\nBackups will be created automatically when saving files")
 
 	// Step 4: Load world for garage/truck information
 	fmt.Println("\nLoading world data...")

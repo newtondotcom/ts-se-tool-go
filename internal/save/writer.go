@@ -2,6 +2,7 @@ package save
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"time"
@@ -11,7 +12,7 @@ import (
 )
 
 // WriteGameSII writes a game.sii document to the specified profile and save slot.
-// It overwrites the existing file if it exists. The save directory must already exist.
+// It creates a backup (game_backup.sii) before writing. The save directory must already exist.
 // If encrypt is true, the file is written in encrypted format; otherwise, it's written as plaintext.
 func WriteGameSII(profileDir, slot string, doc *sii.Document, encrypt bool) error {
 	saveDir := filepath.Join(profileDir, "save", slot)
@@ -20,6 +21,11 @@ func WriteGameSII(profileDir, slot string, doc *sii.Document, encrypt bool) erro
 	// Ensure save directory exists
 	if err := os.MkdirAll(saveDir, 0o755); err != nil {
 		return fmt.Errorf("create save directory: %w", err)
+	}
+
+	// Backup existing file if it exists
+	if err := BackupGameSII(profileDir, slot); err != nil {
+		return fmt.Errorf("backup game.sii: %w", err)
 	}
 
 	// Serialize document to SII text
@@ -43,6 +49,7 @@ func WriteGameSII(profileDir, slot string, doc *sii.Document, encrypt bool) erro
 }
 
 // WriteInfoSII writes an info.sii document to the specified save directory.
+// It creates a backup (info_backup.sii) before writing if the file exists.
 // If the save directory doesn't exist, it will be created (useful for convoy tools).
 // If encrypt is true, the file is written in encrypted format; otherwise, it's written as plaintext.
 func WriteInfoSII(saveDir string, doc *sii.Document, encrypt bool) error {
@@ -51,6 +58,11 @@ func WriteInfoSII(saveDir string, doc *sii.Document, encrypt bool) error {
 	// Ensure save directory exists
 	if err := os.MkdirAll(saveDir, 0o755); err != nil {
 		return fmt.Errorf("create save directory: %w", err)
+	}
+
+	// Backup existing file if it exists
+	if err := BackupInfoSII(saveDir); err != nil {
+		return fmt.Errorf("backup info.sii: %w", err)
 	}
 
 	// Serialize document to SII text
@@ -74,10 +86,15 @@ func WriteInfoSII(saveDir string, doc *sii.Document, encrypt bool) error {
 }
 
 // WriteProfileSII writes a profile.sii document to the specified profile directory.
-// It overwrites the existing file if it exists. The profile directory must already exist.
+// It creates a backup (profile_backup.sii) before writing. The profile directory must already exist.
 // If encrypt is true, the file is written in encrypted format; otherwise, it's written as plaintext.
 func WriteProfileSII(profileDir string, doc *sii.Document, encrypt bool) error {
 	profilePath := filepath.Join(profileDir, "profile.sii")
+
+	// Backup existing file if it exists
+	if err := BackupProfileSII(profileDir); err != nil {
+		return fmt.Errorf("backup profile.sii: %w", err)
+	}
 
 	// Serialize document to SII text
 	plaintext, err := sii.WriteDocument(doc)
@@ -99,27 +116,92 @@ func WriteProfileSII(profileDir string, doc *sii.Document, encrypt bool) error {
 	return nil
 }
 
-// BackupSaveSlot creates a backup of a save slot by renaming it to {slot}.bckp.
-// If a backup already exists, it appends a timestamp to avoid conflicts.
-// This mirrors the "mv slot slot.bckp" behavior mentioned in TODO.md.
-func BackupSaveSlot(profileDir, slot string) error {
+// BackupGameSII creates a backup of game.sii as game_backup.sii.
+// If backup already exists, it appends a timestamp to avoid conflicts.
+func BackupGameSII(profileDir, slot string) error {
 	saveDir := filepath.Join(profileDir, "save", slot)
-	backupDir := filepath.Join(profileDir, "save", slot+".bckp")
+	gamePath := filepath.Join(saveDir, "game.sii")
+	backupPath := filepath.Join(saveDir, "game_backup.sii")
 
-	// Check if save slot exists
-	if _, err := os.Stat(saveDir); err != nil {
-		return fmt.Errorf("save slot does not exist: %w", err)
+	// Check if game.sii exists
+	if _, err := os.Stat(gamePath); err != nil {
+		return fmt.Errorf("game.sii does not exist: %w", err)
 	}
 
 	// If backup already exists, append timestamp
-	if _, err := os.Stat(backupDir); err == nil {
+	if _, err := os.Stat(backupPath); err == nil {
 		timestamp := time.Now().Format("20060102_150405")
-		backupDir = filepath.Join(profileDir, "save", fmt.Sprintf("%s.bckp_%s", slot, timestamp))
+		backupPath = filepath.Join(saveDir, fmt.Sprintf("game_backup_%s.sii", timestamp))
 	}
 
-	// Rename directory
-	if err := os.Rename(saveDir, backupDir); err != nil {
-		return fmt.Errorf("rename save slot to backup: %w", err)
+	// Copy file
+	return copyFile(gamePath, backupPath)
+}
+
+// BackupInfoSII creates a backup of info.sii as info_backup.sii.
+// If backup already exists, it appends a timestamp to avoid conflicts.
+func BackupInfoSII(saveDir string) error {
+	infoPath := filepath.Join(saveDir, "info.sii")
+	backupPath := filepath.Join(saveDir, "info_backup.sii")
+
+	// Check if info.sii exists (it's optional, so return nil if it doesn't exist)
+	if _, err := os.Stat(infoPath); err != nil {
+		return nil // info.sii is optional, no error if missing
+	}
+
+	// If backup already exists, append timestamp
+	if _, err := os.Stat(backupPath); err == nil {
+		timestamp := time.Now().Format("20060102_150405")
+		backupPath = filepath.Join(saveDir, fmt.Sprintf("info_backup_%s.sii", timestamp))
+	}
+
+	// Copy file
+	return copyFile(infoPath, backupPath)
+}
+
+// BackupProfileSII creates a backup of profile.sii as profile_backup.sii.
+// If backup already exists, it appends a timestamp to avoid conflicts.
+func BackupProfileSII(profileDir string) error {
+	profilePath := filepath.Join(profileDir, "profile.sii")
+	backupPath := filepath.Join(profileDir, "profile_backup.sii")
+
+	// Check if profile.sii exists
+	if _, err := os.Stat(profilePath); err != nil {
+		return fmt.Errorf("profile.sii does not exist: %w", err)
+	}
+
+	// If backup already exists, append timestamp
+	if _, err := os.Stat(backupPath); err == nil {
+		timestamp := time.Now().Format("20060102_150405")
+		backupPath = filepath.Join(profileDir, fmt.Sprintf("profile_backup_%s.sii", timestamp))
+	}
+
+	// Copy file
+	return copyFile(profilePath, backupPath)
+}
+
+// copyFile copies a file from src to dst.
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("open source file: %w", err)
+	}
+	defer srcFile.Close()
+
+	srcInfo, err := srcFile.Stat()
+	if err != nil {
+		return fmt.Errorf("stat source file: %w", err)
+	}
+
+	dstFile, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, srcInfo.Mode())
+	if err != nil {
+		return fmt.Errorf("create destination file: %w", err)
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		return fmt.Errorf("copy file contents: %w", err)
 	}
 
 	return nil
