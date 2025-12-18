@@ -65,10 +65,12 @@ func ReadDocument(data []byte) (*Document, error) {
 				i++
 			}
 
+			props, order := parseProperties(body)
 			blocks = append(blocks, Block{
-				Type:       typ,
-				Name:       name,
-				Properties: parseProperties(body),
+				Type:          typ,
+				Name:          name,
+				Properties:    props,
+				PropertyOrder: order,
 			})
 			continue
 		}
@@ -86,14 +88,48 @@ func WriteDocument(doc *Document) ([]byte, error) {
 
 	buf.WriteString("SiiNunit\n{\n")
 
-	for _, b := range doc.Blocks {
+	for i, b := range doc.Blocks {
 		fmt.Fprintf(&buf, "%s : %s {\n", b.Type, b.Name)
-		for k, vals := range b.Properties {
-			for _, v := range vals {
-				fmt.Fprintf(&buf, " %s: %s\n", k, v)
+
+		// Use PropertyOrder if available, otherwise iterate over map (may be unordered)
+		if len(b.PropertyOrder) > 0 {
+			// Write properties in original order
+			for _, k := range b.PropertyOrder {
+				if vals, ok := b.Properties[k]; ok {
+					for _, v := range vals {
+						fmt.Fprintf(&buf, " %s: %s\n", k, v)
+					}
+				}
+			}
+			// Write any new properties that weren't in original order
+			for k, vals := range b.Properties {
+				found := false
+				for _, orderedKey := range b.PropertyOrder {
+					if k == orderedKey {
+						found = true
+						break
+					}
+				}
+				if !found {
+					for _, v := range vals {
+						fmt.Fprintf(&buf, " %s: %s\n", k, v)
+					}
+				}
+			}
+		} else {
+			// Fallback: iterate over map (no order guarantee)
+			for k, vals := range b.Properties {
+				for _, v := range vals {
+					fmt.Fprintf(&buf, " %s: %s\n", k, v)
+				}
 			}
 		}
 		buf.WriteString("}\n")
+
+		// Add blank line between blocks (except after the last block)
+		if i < len(doc.Blocks)-1 {
+			buf.WriteString("\n")
+		}
 	}
 
 	buf.WriteString("}\n")
@@ -109,8 +145,11 @@ func splitLines(b []byte) []string {
 	return out
 }
 
-func parseProperties(lines []string) map[string][]string {
+func parseProperties(lines []string) (map[string][]string, []string) {
 	props := make(map[string][]string)
+	var order []string
+	seen := make(map[string]bool)
+
 	for _, l := range lines {
 		l = strings.TrimSpace(l)
 		if l == "" || l == "}" || l == "{" {
@@ -123,6 +162,12 @@ func parseProperties(lines []string) map[string][]string {
 		k := strings.TrimSpace(parts[0])
 		v := strings.TrimSpace(parts[1])
 		props[k] = append(props[k], v)
+
+		// Track order of first occurrence of each key
+		if !seen[k] {
+			order = append(order, k)
+			seen[k] = true
+		}
 	}
-	return props
+	return props, order
 }

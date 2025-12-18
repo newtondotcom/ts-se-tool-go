@@ -19,6 +19,8 @@ type Block struct {
 	Type       string
 	Name       string
 	Properties map[string][]string
+	// PropertyOrder stores the order in which properties were read from the file
+	PropertyOrder []string
 }
 
 // IndexByName builds a simple name -> Block map over all blocks in the
