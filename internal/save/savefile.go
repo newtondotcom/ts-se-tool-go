@@ -77,3 +77,31 @@ func LoadSaveFile(profileDir, slot string) (*Documents, error) {
 		Game:    gameDoc,
 	}, nil
 }
+
+// WriteSaveFile writes all three SII files (profile.sii, info.sii, game.sii) for a given
+// profile directory and save slot. This is a convenience function that calls the individual
+// write functions. If encrypt is true, files are written in encrypted format.
+func WriteSaveFile(profileDir, slot string, docs *Documents, encrypt bool) error {
+	// Write profile.sii
+	if docs.Profile != nil {
+		if err := WriteProfileSII(profileDir, docs.Profile, encrypt); err != nil {
+			return fmt.Errorf("write profile.sii: %w", err)
+		}
+	}
+
+	// Write game.sii and info.sii
+	if docs.Game != nil {
+		if err := WriteGameSII(profileDir, slot, docs.Game, encrypt); err != nil {
+			return fmt.Errorf("write game.sii: %w", err)
+		}
+	}
+
+	if docs.Info != nil {
+		saveDir := filepath.Join(profileDir, "save", slot)
+		if err := WriteInfoSII(saveDir, docs.Info, encrypt); err != nil {
+			return fmt.Errorf("write info.sii: %w", err)
+		}
+	}
+
+	return nil
+}

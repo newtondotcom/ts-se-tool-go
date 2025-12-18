@@ -5,6 +5,7 @@ import (
 	"compress/zlib"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -180,4 +181,92 @@ func tryReadUint32(b []byte, offset *int) (uint32, bool) {
 // bytesReader is a tiny helper to adapt a []byte to io.Reader without copying.
 func bytesReader(b []byte) io.Reader {
 	return bytes.NewReader(b)
+}
+
+// EncryptFile encrypts plaintext SII data and writes it to a file.
+// This is the reverse of DecryptFile: it compresses with zlib, encrypts with AES-CBC,
+// and writes the encrypted format with signature, HMAC placeholder, IV, and encrypted data.
+func EncryptFile(path string, plaintext []byte) error {
+	encrypted, err := encrypt(plaintext)
+	if err != nil {
+		return fmt.Errorf("encrypt data: %w", err)
+	}
+
+	if err := os.WriteFile(path, encrypted, 0o644); err != nil {
+		return fmt.Errorf("write encrypted file: %w", err)
+	}
+
+	return nil
+}
+
+// encrypt is the reverse of decrypt: it compresses plaintext with zlib,
+// then encrypts it with AES-CBC using a random IV, and formats it with
+// signature, HMAC placeholder, IV, dataSize, and encrypted data.
+func encrypt(plaintext []byte) ([]byte, error) {
+	// Step 1: Compress with zlib
+	var compressed bytes.Buffer
+	writer := zlib.NewWriter(&compressed)
+	if _, err := writer.Write(plaintext); err != nil {
+		return nil, fmt.Errorf("zlib compress: %w", err)
+	}
+	if err := writer.Close(); err != nil {
+		return nil, fmt.Errorf("zlib close: %w", err)
+	}
+	compressedData := compressed.Bytes()
+
+	// Step 2: Generate random IV
+	iv := make([]byte, aes.BlockSize)
+	if _, err := rand.Read(iv); err != nil {
+		return nil, fmt.Errorf("generate IV: %w", err)
+	}
+
+	// Step 3: Add PKCS#7 padding
+	padding := aes.BlockSize - (len(compressedData) % aes.BlockSize)
+	paddedData := make([]byte, len(compressedData)+padding)
+	copy(paddedData, compressedData)
+	for i := len(compressedData); i < len(paddedData); i++ {
+		paddedData[i] = byte(padding)
+	}
+
+	// Step 4: Encrypt with AES-CBC
+	block, err := aes.NewCipher(siiKey)
+	if err != nil {
+		return nil, fmt.Errorf("aes.NewCipher: %w", err)
+	}
+
+	mode := cipher.NewCBCEncrypter(block, iv)
+	encryptedData := make([]byte, len(paddedData))
+	mode.CryptBlocks(encryptedData, paddedData)
+
+	// Step 5: Build output buffer
+	// Format: signature (4) + HMAC (32) + IV (16) + dataSize (4) + encrypted data
+	var output bytes.Buffer
+
+	// Signature
+	if err := binary.Write(&output, binary.LittleEndian, uint32(SignatureEncrypted)); err != nil {
+		return nil, fmt.Errorf("write signature: %w", err)
+	}
+
+	// HMAC placeholder (32 bytes of zeros, matching C# behavior)
+	hmac := make([]byte, 32)
+	if _, err := output.Write(hmac); err != nil {
+		return nil, fmt.Errorf("write HMAC: %w", err)
+	}
+
+	// IV
+	if _, err := output.Write(iv); err != nil {
+		return nil, fmt.Errorf("write IV: %w", err)
+	}
+
+	// Data size
+	if err := binary.Write(&output, binary.LittleEndian, uint32(len(encryptedData))); err != nil {
+		return nil, fmt.Errorf("write data size: %w", err)
+	}
+
+	// Encrypted data
+	if _, err := output.Write(encryptedData); err != nil {
+		return nil, fmt.Errorf("write encrypted data: %w", err)
+	}
+
+	return output.Bytes(), nil
 }
